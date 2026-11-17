@@ -12,6 +12,7 @@
 #include "llvm/Support/ExitCodes.h"
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/thread.h"
+#include <atomic>
 #include <cassert>
 #include <mutex>
 #include <setjmp.h>
@@ -22,6 +23,8 @@ namespace {
 
 struct CrashRecoveryContextImpl;
 static LLVM_THREAD_LOCAL const CrashRecoveryContextImpl *CurrentContext;
+
+static std::atomic<unsigned> NumRecoveredCrashes;
 
 struct CrashRecoveryContextImpl {
   // When threads are disabled, this links up all active
@@ -66,6 +69,7 @@ public:
 
     assert(!Failed && "Crash recovery context already failed!");
     Failed = true;
+    NumRecoveredCrashes.fetch_add(1, std::memory_order_relaxed);
 
     if (CRC->DumpStackAndCleanupOnFailure)
       sys::CleanupOnSignal(Context);
@@ -124,6 +128,10 @@ CrashRecoveryContext::~CrashRecoveryContext() {
 
 bool CrashRecoveryContext::isRecoveringFromCrash() {
   return IsRecoveringFromCrash != nullptr;
+}
+
+unsigned CrashRecoveryContext::getNumRecoveredCrashes() {
+  return NumRecoveredCrashes.load(std::memory_order_relaxed);
 }
 
 CrashRecoveryContext *CrashRecoveryContext::GetCurrent() {

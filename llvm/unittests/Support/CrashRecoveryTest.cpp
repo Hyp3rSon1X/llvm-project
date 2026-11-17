@@ -75,6 +75,30 @@ TEST(CrashRecoveryTest, Cleanup) {
   llvm::CrashRecoveryContext::Disable();
 }
 
+static void exitThroughContext() {
+  CrashRecoveryContext::GetCurrent()->HandleExit(1);
+}
+
+static void crashOnThread() {
+  CrashRecoveryContext().RunSafelyOnThread(nullDeref);
+}
+
+TEST(CrashRecoveryTest, NumRecoveredCrashes) {
+  llvm::CrashRecoveryContext::Enable();
+  unsigned Count = CrashRecoveryContext::getNumRecoveredCrashes();
+  EXPECT_TRUE(CrashRecoveryContext().RunSafely(noop));
+  EXPECT_EQ(Count, CrashRecoveryContext::getNumRecoveredCrashes());
+  EXPECT_FALSE(CrashRecoveryContext().RunSafely(nullDeref));
+  EXPECT_EQ(++Count, CrashRecoveryContext::getNumRecoveredCrashes());
+  EXPECT_FALSE(CrashRecoveryContext().RunSafely(exitThroughContext));
+  EXPECT_EQ(++Count, CrashRecoveryContext::getNumRecoveredCrashes());
+  // A crash that a nested context recovered from on another thread is counted
+  // even though the outer context completes normally.
+  EXPECT_TRUE(CrashRecoveryContext().RunSafely(crashOnThread));
+  EXPECT_EQ(++Count, CrashRecoveryContext::getNumRecoveredCrashes());
+  llvm::CrashRecoveryContext::Disable();
+}
+
 TEST(CrashRecoveryTest, DumpStackCleanup) {
   SmallString<128> Filename;
   std::error_code EC = sys::fs::createTemporaryFile("crash", "test", Filename);

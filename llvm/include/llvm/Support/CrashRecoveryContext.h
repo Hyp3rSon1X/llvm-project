@@ -72,6 +72,15 @@ public:
   /// Return true if the current thread is recovering from a crash.
   LLVM_ABI static bool isRecoveringFromCrash();
 
+  /// Return the number of crashes that crash recovery contexts in this process
+  /// have recovered from, on any thread. This counts signals as well as calls
+  /// to HandleExit (for example through sys::Process::Exit). A host that runs
+  /// LLVM-based tools in-process can compare the count before and after a
+  /// call to notice a crash that a nested context recovered from without
+  /// reporting it, for example one on a helper thread started with
+  /// RunSafelyOnThread.
+  LLVM_ABI static unsigned getNumRecoveredCrashes();
+
   /// Execute the provided callback function (with the given arguments) in
   /// a protected context.
   ///
