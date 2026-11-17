@@ -1858,7 +1858,7 @@ bool CommandLineParser::ParseCommandLineOptions(
   // If we had an error processing our arguments, don't let the program execute
   if (ErrorParsing) {
     if (!IgnoreErrors)
-      exit(1);
+      sys::Process::Exit(1);
     return false;
   }
   return true;
@@ -2358,7 +2358,7 @@ public:
     printHelp();
 
     // Halt the program since help information was printed
-    exit(0);
+    sys::Process::Exit(0);
   }
 
   void printHelp() {
@@ -2691,11 +2691,11 @@ void VersionPrinter::operator=(bool OptionWasSpecified) {
 
   if (CommonOptions->OverrideVersionPrinter != nullptr) {
     CommonOptions->OverrideVersionPrinter(outs());
-    exit(0);
+    sys::Process::Exit(0);
   }
   print(CommonOptions->ExtraVersionPrinters);
 
-  exit(0);
+  sys::Process::Exit(0);
 }
 
 void HelpPrinterWrapper::operator=(bool Value) {

@@ -23,6 +23,7 @@
 #include "llvm/Remarks/RemarkStreamer.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/Process.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cassert>
 #include <cstdlib>
@@ -265,7 +266,7 @@ void LLVMContext::diagnose(const DiagnosticInfo &DI) {
   DI.print(DP);
   errs() << "\n";
   if (DI.getSeverity() == DS_Error)
-    exit(1);
+    sys::Process::Exit(1);
 }
 
 //===----------------------------------------------------------------------===//

@@ -133,8 +133,9 @@ void llvm::report_fatal_error(const Twine &Reason, bool GenCrashDiag) {
 
   if (GenCrashDiag)
     abort();
-  else
-    exit(1);
+  // Exit through sys::Process::Exit so that a CrashRecoveryContext (LLVM used
+  // as a library) regains control instead of the whole process exiting.
+  sys::Process::Exit(1);
 }
 
 void llvm::reportFatalInternalError(const char *reason) {
