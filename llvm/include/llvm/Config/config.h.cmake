@@ -16,6 +16,9 @@
 /* Define to 1 to enable crash overrides, and to 0 otherwise. */
 #cmakedefine01 ENABLE_CRASH_OVERRIDES
 
+/* Define to 1 to install process-wide signal handlers, and to 0 otherwise. */
+#cmakedefine01 ENABLE_SIGNAL_HANDLERS
+
 /* Define to 1 to enable crash memory dumps, and to 0 otherwise. */
 #cmakedefine01 LLVM_ENABLE_CRASH_DUMPS
 

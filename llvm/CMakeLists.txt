@@ -579,6 +579,12 @@ if(LLVM_ENABLE_CRASH_OVERRIDES)
   set(ENABLE_CRASH_OVERRIDES 1)
 endif()
 
+option(LLVM_ENABLE_SIGNAL_HANDLERS
+  "Install process-wide signal handlers (file removal, stack traces). Turn off when LLVM runs as a library inside an app." ON)
+if(LLVM_ENABLE_SIGNAL_HANDLERS)
+  set(ENABLE_SIGNAL_HANDLERS 1)
+endif()
+
 option(LLVM_ENABLE_CRASH_DUMPS "Turn on memory dumps on crashes. Currently only implemented on Windows." OFF)
 
 set(LLVM_ENABLE_DEBUGLOC_COVERAGE_TRACKING "DISABLED" CACHE STRING

@@ -293,6 +293,12 @@ static void CreateSigAltStack() {}
 #endif
 
 static void RegisterHandlers() { // Not signal-safe.
+#if !ENABLE_SIGNAL_HANDLERS
+  // LLVM runs as a library inside a host process that owns its signal
+  // dispositions: never install handlers. Files registered for removal are
+  // simply left behind if the process is killed.
+  return;
+#endif
   // The mutex prevents other threads from registering handlers while we're
   // doing it. We also have to protect the handlers and their count because
   // a signal handler could fire while we're registering handlers.
