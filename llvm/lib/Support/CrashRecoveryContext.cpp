@@ -402,7 +402,9 @@ static void installExceptionOrSignalHandlers() {
   // Setup the signal handler.
   struct sigaction Handler;
   Handler.sa_handler = CrashRecoverySignalHandler;
-  Handler.sa_flags = 0;
+  // Run on the thread's alternate signal stack, if it has one, so that a
+  // stack overflow in a protected context can be recovered from as well.
+  Handler.sa_flags = SA_ONSTACK;
   sigemptyset(&Handler.sa_mask);
 
   for (unsigned i = 0; i != NumSignals; ++i) {

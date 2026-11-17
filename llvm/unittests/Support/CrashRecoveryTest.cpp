@@ -15,6 +15,7 @@
 #include "llvm/Support/Program.h"
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/thread.h"
 #include "llvm/TargetParser/Host.h"
 #include "llvm/TargetParser/Triple.h"
 #include "gtest/gtest.h"
@@ -161,6 +162,48 @@ TEST(CrashRecoveryTest, Abort) {
   EXPECT_FALSE(CrashRecoveryContext().RunSafely(A));
   // Test a second time to ensure we reinstall the abort signal handler.
   EXPECT_FALSE(CrashRecoveryContext().RunSafely(A));
+}
+#endif
+
+#ifdef LLVM_ON_UNIX
+static LLVM_ATTRIBUTE_NOINLINE int recurse(unsigned Depth,
+                                           volatile char *Prev) {
+  volatile char Buffer[1024];
+  Buffer[0] = Prev[0];
+  if (Depth == 0)
+    return Buffer[0];
+  return recurse(Depth - 1, Buffer) + Buffer[1];
+}
+
+static void overflowStack() {
+  volatile char Start[1] = {0};
+  recurse(~0u, Start);
+}
+
+TEST(CrashRecoveryTest, StackOverflowOnAlternateStack) {
+  llvm::CrashRecoveryContext::Enable();
+  bool Recovered = false;
+  stack_t During = {};
+  llvm::thread Thread(std::optional<unsigned>(1 << 20), [&] {
+    // A handler for the signal raised by a stack overflow can only run on an
+    // alternate signal stack.
+    std::vector<char> AltStack(MINSIGSTKSZ + 64 * 1024);
+    stack_t SS = {};
+    SS.ss_sp = AltStack.data();
+    SS.ss_size = AltStack.size();
+    stack_t Old;
+    if (sigaltstack(&SS, &Old) != 0)
+      return;
+    Recovered = !CrashRecoveryContext().RunSafely(overflowStack);
+    sigaltstack(nullptr, &During);
+    sigaltstack(&Old, nullptr);
+  });
+  Thread.join();
+  EXPECT_TRUE(Recovered);
+  // Leaving the handler through longjmp must not leave the thread marked as
+  // running on its alternate stack.
+  EXPECT_EQ(0, During.ss_flags & SS_ONSTACK);
+  llvm::CrashRecoveryContext::Disable();
 }
 #endif
 
